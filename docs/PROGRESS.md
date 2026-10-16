@@ -128,3 +128,21 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
   M1-headless/M2-adb/M3-display with reasons).
 - Clean-room: design cites `docs/spec/` only; verified no vendor strings/configs in
   design docs. No implementation code. Text only. STOPPING for review before any code.
+
+## 2026-10-16 — M1 DONE (headless boot proof, ~30 s wall)
+
+- Env: QEMU 11.1.2, `/dev/kvm` writable, rust 1.90 rootless — nothing missing.
+- Workspace: 10 crates (emu-vmm + emu-core real, 8 stubs), MIT/Apache licences,
+  deny.toml (added Unicode-3.0 for transitive unicode-ident; cargo-deny binary absent
+  so CI-gated, manual tree audit clean: thiserror/serde/serde_json only).
+- QMP: owned minimal blocking client (qmp 0.1.1 immature, qapi-qmp types-only —
+  verified on crates.io, rationale in qmp.rs). Socket in 0700 `$XDG_RUNTIME_DIR` dir.
+- ISO: OSDN unresolvable from IPv6-only host → official SourceForge mirror, 8-way
+  ranged fetch, sha1 `1cc85b5e…995aa0` VERIFIED. Stored outside repo.
+- Proof: direct kernel boot (ISO menu stalls headless — orange menu screenshotted);
+  cmdline from ISO isolinux.cfg + consoles + vga=791; serial shows kernel boot and
+  `Detecting Android-x86... found at /dev/sr0`; lit frame ≤10 s, lit+changed PASS
+  at ~20–30 s; graceful stop + full cleanup. Demo + ignored integration test both pass.
+- 19 unit tests green; fmt/clippy clean. Deviations: Boot::DirectKernel added,
+  polling proof (display sleeps when idle), serial_log API, persistent qcow2
+  deferred (live-boot per scope).

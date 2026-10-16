@@ -74,3 +74,22 @@ Linux-first (Arch/KVM). Windows/macOS are trait targets, not built in v1.
   than QMP-driving QEMU.
 - REJECTED for v1: custom rust-vmm build (effort, no GPU story), VirtualBox driving
   (licence split, CLI-scraping control plane, host-module friction).
+
+## M1 validated flags (QEMU 11.1.2, Arch/KVM, Android-x86 9.0-r2)
+
+Proven working 2026-10-16 (headless boot proof in ~30 s wall):
+
+```text
+-machine q35,accel=kvm -cpu host -m 2048 -smp 2
+-cdrom <iso> -kernel <kernel> -initrd <initrd.img>
+-append "root=/dev/ram0 console=tty0 console=ttyS0,115200 vga=791 SRC= DATA="
+-display none -vga std -serial file:<run>/serial.log
+-qmp unix:<run>/qmp.sock,server=on,wait=off -no-reboot
+```
+
+Notes: direct kernel boot (the ISO's isolinux menu does not self-boot headless —
+stuck on the orange menu, verified by screendump); kernel cmdline is the ISO's own
+`livem` entry plus dual consoles and `vga=791` (without it the direct-boot
+framebuffer never lights); QMP `input-send-event` on this QEMU carries
+key/btn/rel/abs/**mtt** cases (probed via `query-qmp-schema`) — multitouch
+transport confirmed present for M4.

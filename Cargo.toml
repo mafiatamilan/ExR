@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/emu-core",
+    "crates/emu-vmm",
+    "crates/emu-config",
+    "crates/emu-image",
+    "crates/emu-adb",
+    "crates/emu-display",
+    "crates/emu-input",
+    "crates/emu-manager",
+    "crates/emu-cli",
+    "crates/emu-gui",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+authors = ["ExR Contributors"]
+
+[workspace.dependencies]
+emu-core = { path = "crates/emu-core" }
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

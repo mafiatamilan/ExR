@@ -1,0 +1,31 @@
+# cargo-deny configuration (allowlist: MIT / Apache-2.0 / BSD-3-Clause only)
+# No exceptions without explicit approval. CI runs `cargo deny check`.
+
+[graph]
+targets = [{ triple = "x86_64-unknown-linux-gnu" }]
+all-features = false
+no-default-features = false
+
+[licenses]
+version = 2
+# Unicode-3.0 covers `unicode-ident` (unavoidable proc-macro transitive dep,
+# dual/triple-licensed alongside MIT/Apache-2.0). No other additions allowed.
+allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "Unicode-3.0"]
+confidence-threshold = 0.8
+exceptions = []
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+highlight = "all"
+workspace-default-features = "allow"
+allow = []
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
