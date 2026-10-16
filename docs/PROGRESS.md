@@ -75,3 +75,15 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
   no fallback needed (1.11.0 worked; innoextract-go untouched).
 - Docs rewritten to template: `docs/spec/mumu-A1.md` (no IDs/addresses/snippets),
   `docs/evidence/mumu.md` E9. STOPPING before MEmu per instructions.
+
+## 2026-10-16 — MEmu A1 DONE (full offline bundle, VBox-fork VMM CONFIRMED)
+
+- Input `MEmu-Setup-9.5.7.1-hafb3411bb.exe` (730 MiB, sha256 `83225b53…`), Microvirt Qt stub;
+  payload = solid 7z in PE resources (735 MiB → 234 files / 2.13 GiB).
+- Extracted to gitignored `work/memu/` + VMM pack to `work/memu-hyperv/`; guest VHDs
+  converted read-only to raw in `work/` (disk2 excluded: 256 GiB virtual).
+- VMM = VirtualBox 6.1.40 fork CONFIRMED (renamed binaries, fork PDB paths, VBox-schema
+  config); Hyper-V HCS mode CONFIRMED; Android 9 x86_64 + Houdini-style bridge CONFIRMED;
+  GLES encoder passthrough CONFIRMED; memuc `##` CLI CONFIRMED; root/GPS/ID extras
+  CONFIRMED. Keymap format UNKNOWN (no such files).
+- Reports: `docs/spec/memu-A1.md` + `docs/evidence/memu.md`. Text only, nothing executed.
