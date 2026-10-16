@@ -38,3 +38,24 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
   7 endpoint hits with addresses. Session closed via `close_binary`.
 - Spec updated: `docs/spec/mumu-msi-A1.md` section 2 + new section 9 (evidence IDs).
 - `work/` added to `.gitignore`; derived bytes stay untracked.
+
+## 2026-10-16 — MuMu A1 finished per approved template (no other products started)
+
+- Env is Arch (pacman, no apt; sudo needs password) so tools went rootless to
+  `/tmp/opencode/reatools/root` (outside repo): innoextract 1.9, msitools 0.106,
+  binwalk 3.1.0, unshield 1.6.2. No system modification.
+- `innoextract --list/--extract` on `Setup.exe`: FAILED as recorded —
+  loader revision 2 / checksum mismatch / undetectable data version (1.9 covers Inno
+  to 6.0.5; payload is 6.7.0). Payload still locked; no alt attempted without approval.
+- `msiinfo` full tables + `msiextract` to `work/mumu-msiextract/`: 2 files, hashes match
+  cabextract outputs; Manufacturer corrected to `mumu-mnq-win`; 4 components, 1 feature,
+  elevated stub-launch finish action, .NET 2.0 + OS-version launch conditions.
+- `binwalk` on `Setup.exe`: 2 generic hits only (no archive/disk signatures).
+- Stub triage: `Setup.exe` strings show Delphi RTL only (payload LZMA-opaque); no VMM/ADB
+  strings drawable from the stub. Ghidra stays parked per triage-first rule (earlier run
+  justified: downloader-endpoint question).
+- No guest image at any extracted layer — mount step queued behind payload unlock.
+- Output split: `docs/spec/mumu-A1.md` (template a–e, human-readable, no IDs/addresses),
+  `docs/evidence/mumu.md` (ledger E1–E8). Old `mumu-msi-A1.md` moved to `mumu-A1.md`.
+- .gitignore verified: `*.exe/*.msi/*.zip/*.apk/*.ipa/*.dmg/*.pkg/*.iso/*.vhd*/*.ova/*.img`,
+  `build/out/dist`, `work/` — only text reports staged.
