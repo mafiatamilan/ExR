@@ -167,3 +167,41 @@ Originals: `mumu-mnq-win.igd055.msi` / `.zip` in repo root (read-only inputs).
 - Ghidra decision (triage-first): no new run — no extracted binary maps to a named A3
   question (VMM/display/input absent offline); `ins.ini` would answer bundler-loader
   questions only (out of scope, left static).
+
+## E10. Provenance / security note (Q2; evidence ledger only)
+
+Bundleware-style contents: the offline `Setup.exe` payload holds a dictionary editor,
+browser engine, task loader, updater, VC redist, legacy image DLLs, a PE DLL misnamed
+as `.ini`, random-bytes configs, a hex-encoded blob, numbered data slots, and a
+randomized install path (`code$GenerateRandomStr`) — the shape of a download-portal
+monetization wrapper, not vendor emulator packaging. Channel tag `igd055` appears in
+both MSI/ZIP filenames (`mumu-mnq-win.igd055.*`); the same `mnq` tag reappears in the
+LDPlayer stub's `mnq_version` string — possible shared portal/channel infra, recorded
+without network verification.
+
+Authenticode sweep (static PE Security-directory parse + openssl, offline; no URL fetch,
+no hash-lookup, no revocation check; PE-hash-vs-signature binding NOT verified — left
+for your own verification):
+- MSI support set (`aicustact.dll`, `SoftwareDetector.dll`, `viewer.exe`, `viewer.exe_1`):
+  Caphyon SRL (Craiova, RO), thawte SHA256 CA, cert 2020-03-06..2023-03-05, NO timestamp
+  (expired; installer-vendor tooling as expected).
+- SFX stub + SFX toolset (`MuMu_6.0.1_R4r3SjC.exe`, `nemu-downloader.exe`,
+  `MuMuDownloader.exe`, `ColaBoxChecker.exe`, `HyperVChecker.exe`, `crashpad_handler.exe`,
+  `sentry.dll`): NetEase (Hangzhou) Network Co., Ltd (Zhejiang, serial 91330000788831167A).
+  Stub/nemu/sentry chain DigiCert G4, cert 2024-08-26..2027-08-28, NO timestamp → currently
+  time-valid. Checker/downloader set chain DigiCert Assured-ID, cert 2020-12-22..2024-01-02,
+  NO timestamp → EXPIRED Jan 2024. Bundled `7z.exe/7z.dll`: same NetEase signer,
+  2019-01-30..2022-02-02, NO timestamp → EXPIRED Feb 2022.
+- `Setup.exe` (Inno stub): UNSIGNED (Security dir empty).
+- `VC_redist.x64.exe`: Microsoft Corporation, PCA 2011, cert 2023-02-16..2024-01-31,
+  NO timestamp → EXPIRED Jan 2024.
+- `ins.ini` (disguised loader DLL): 合肥诺拉网络科技有限公司 (Hefei Nuola Network Technology),
+  DigiCert G4, cert 2021-06-18..2024-06-21, WITH DigiCert RFC3161 timestamp → timestamped
+  (lifetime preserved at signing time under standard interpretation).
+- Small DLLs (`FourierTransformLib8`, `ImageRestoreLib8`, `wavelet_3_8`, `WS_Log`, both
+  copies): UNSIGNED. Big blobs (`TaskLoad`, `dll1`, `stardict-editor`, `libcef`,
+  `Updater`, slots `44/55/66/77`, `instal.ini`, `_8`): NOT PE files at all.
+- Microsoft runtime DLLs in SFX (`api-ms-*`, `msvcp140`, `vcruntime140`, `ucrtbase`,
+  `msvcrt`, `msvcp_win`): Microsoft signers, api-ms set timestamped (2015–2016).
+- Chain roots: DigiCert Trusted Root G4 present in local bundle; full chain/EKU/revocation
+  NOT evaluated — your lookup to do.

@@ -97,3 +97,19 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
   (kernel 4.0.9, SDK 25); host ANGLE + dual ADB CONFIRMED; NoxConsole CLI CONFIRMED.
   No native Hyper-V mode (DISM/bcdedit disabler instead). Keymap UNKNOWN.
 - Reports: `docs/spec/nox-A1.md` + `docs/evidence/nox.md`. Text only, nothing executed.
+
+## 2026-10-16 — LDPlayer A1 DONE (stub-only, no download)
+
+- Input `LDPlayer9_ens_1001_ld.exe` (1.3 MiB, sha256 `e76e6696…`), JUST OKAY `ldsmaller`
+  WinINet downloader; skin-only 7z (65 files, 20 locales). Two complete static package
+  URLs (`LDPlayer_9.2.0.1.exe` on vendor CDN, inert data); rest runtime-assembled.
+  All A3 UNKNOWN. Reports: `docs/spec/ldplayer-A1.md` + `docs/evidence/ldplayer.md`.
+
+## 2026-10-16 — Q2 provenance note + comparison DONE, STOPPING for review
+
+- `docs/evidence/mumu.md` E10: bundleware assessment, `igd055`/`mnq` tag link, full
+  Authenticode table (Caphyon/NetEase/Microsoft/Hefei-Nuola signers, validity +
+  timestamp status; hash-binding + revocation left for your lookup).
+- `docs/spec/comparison.md`: feature table with per-cell confidence, baseline vs
+  differentiators, unlearned-items section, gap recommendations.
+- No Phase B, no cloning. Awaiting your review of the comparison.
