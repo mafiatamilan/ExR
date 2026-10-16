@@ -87,3 +87,13 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
   GLES encoder passthrough CONFIRMED; memuc `##` CLI CONFIRMED; root/GPS/ID extras
   CONFIRMED. Keymap format UNKNOWN (no such files).
 - Reports: `docs/spec/memu-A1.md` + `docs/evidence/memu.md`. Text only, nothing executed.
+
+## 2026-10-16 — Nox A1 DONE (VBox-derived single-binary VMM + Android 7.1 32-bit guest)
+
+- Input `nox_setup_v7.0.6.2_full_intl.exe` (572 MiB, sha256 `7995ce17…`), Duodian stub;
+  payload = 7z in PE resources (593 MiB → 439 files / 0.92 GiB).
+- VMM = VirtualBox-derived CONFIRMED (unrenamed VBox configs + noxptdevice passthrough +
+  single-binary NOXVM engine); guest = Android 7.1.2 x86 32-bit + Houdini CONFIRMED
+  (kernel 4.0.9, SDK 25); host ANGLE + dual ADB CONFIRMED; NoxConsole CLI CONFIRMED.
+  No native Hyper-V mode (DISM/bcdedit disabler instead). Keymap UNKNOWN.
+- Reports: `docs/spec/nox-A1.md` + `docs/evidence/nox.md`. Text only, nothing executed.
