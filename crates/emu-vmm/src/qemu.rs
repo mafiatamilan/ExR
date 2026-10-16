@@ -177,7 +177,7 @@ impl VmBackend for QemuBackend {
             .arg("-vga")
             .arg("std");
         match &spec.boot {
-            crate::Boot::Iso => {
+            crate::Boot::Iso | crate::Boot::IsoMenu => {
                 cmd.arg("-boot").arg("order=d,menu=off");
             }
             crate::Boot::DirectKernel {
@@ -232,7 +232,15 @@ impl VmBackend for QemuBackend {
             // If QEMU already exited, fail fast with a useful error.
             std::thread::sleep(Duration::from_millis(25));
         }
-        let qmp = QmpClient::connect(&sock, QMP_IO_TIMEOUT)?;
+        let mut qmp = QmpClient::connect(&sock, QMP_IO_TIMEOUT)?;
+
+        // ISO-menu boot: let the bootloader menu settle, then Enter on the
+        // default (first) entry. Timing is generous; SeaBIOS + isolinux show
+        // the menu within seconds on KVM.
+        if spec.boot == crate::Boot::IsoMenu {
+            std::thread::sleep(Duration::from_secs(15));
+            qmp.press_key("ret")?;
+        }
 
         let handle = Handle::new(&spec.name);
         self.children.lock().unwrap().insert(

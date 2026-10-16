@@ -32,6 +32,11 @@ pub enum DisplayMode {
 pub enum Boot {
     /// Boot the attached ISO through the guest bootloader (SeaBIOS/grub menu).
     Iso,
+    /// ISO-menu boot for headless runs: like [`Boot::Iso`] but, once QMP is
+    /// up, waits for the bootloader menu to settle and sends Enter to select
+    /// the default (first) entry. Kept because the Android-x86 menu does not
+    /// reliably self-boot headless (M1b: stuck on the orange menu at 150 s+).
+    IsoMenu,
     /// Direct kernel boot: `-kernel/-initrd/-append`, bypassing any boot menu.
     /// The ISO stays attached as cdrom so the init script finds `system.sfs`.
     /// M1 uses this because the Android-x86 menu does not reliably self-boot

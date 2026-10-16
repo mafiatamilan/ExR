@@ -31,17 +31,21 @@ fn main() -> Result<(), String> {
     let wait_secs: u64 = arg("--wait-secs")
         .and_then(|s| s.parse().ok())
         .unwrap_or(240);
-
     let qemu_bin = std::env::var_os("EXR_QEMU_BIN")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("/usr/bin/qemu-system-x86_64"));
     let mut spec = VmSpec::headless(name, PathBuf::from(iso), qemu_bin);
+    if let Some(ram) = arg("--ram-mb").and_then(|s| s.parse::<u64>().ok()) {
+        spec.ram_mb = ram;
+    }
     // Direct kernel boot by default (deterministic headless path; the ISO menu
     // does not reliably self-boot). Pass --iso-boot to use menu boot instead.
     // Kernel cmdline is verbatim from the ISO's isolinux.cfg `livem` entry,
     // plus dual consoles (VGA text + serial capture) and a VESA mode so the
     // framebuffer exists under direct boot.
-    if arg("--iso-boot").is_none() {
+    if arg("--iso-boot").is_some() {
+        spec.boot = emu_vmm::Boot::IsoMenu;
+    } else {
         let imgdir = std::env::var_os("EXR_IMAGE_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|| {
@@ -78,6 +82,7 @@ fn main() -> Result<(), String> {
         };
         captures += 1;
         let lit = emu_vmm::frame::is_nonblank(&ppm);
+        let kind = emu_vmm::frame::classify(&ppm);
         saw_lit |= lit;
         if let Some(p) = prev {
             if emu_vmm::frame::changed_fraction(&p, &ppm).is_some_and(|c| c > 0.0) {
@@ -86,20 +91,23 @@ fn main() -> Result<(), String> {
         }
         prev = Some(ppm);
         let left = deadline.saturating_duration_since(Instant::now()).as_secs();
-        println!("[m1] capture #{captures} lit={lit} ({left}s left)");
+        println!("[m1] capture #{captures} lit={lit} kind={kind:?} ({left}s left)");
     }
 
     match backend.serial_log(&h) {
         Ok(log) => {
-            let tail: String = log
-                .chars()
-                .rev()
-                .take(1500)
-                .collect::<String>()
-                .chars()
-                .rev()
-                .collect();
-            println!("[m1] serial tail ({} bytes total):\n{tail}", log.len());
+            // Full log to /tmp for analysis (outside the repo); tail on stdout.
+            let _ = std::fs::write("/tmp/exr-m1-serial.log", &log);
+            let lines: Vec<&str> = log.lines().collect();
+            let tail = lines.iter().rev().take(60).rev();
+            println!(
+                "[m1] serial: {} bytes, {} lines (full: /tmp/exr-m1-serial.log):",
+                log.len(),
+                lines.len()
+            );
+            for l in tail {
+                println!("  | {l}");
+            }
         }
         Err(e) => println!("[m1] serial unavailable: {e}"),
     }

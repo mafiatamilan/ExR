@@ -129,6 +129,28 @@ impl QmpClient {
         Ok(())
     }
 
+    /// Send one input event to the guest (`input-send-event`).
+    ///
+    /// `code` is a QEMU `QKeyCode` name (e.g. `"ret"`, `"down"`, `"up"`).
+    /// Used by M1b for bootloader-menu selection; the full keymap engine
+    /// (including the `mtt` multitouch case) arrives in M4.
+    pub fn send_key(&mut self, code: &str, down: bool) -> Result<(), VmError> {
+        self.execute(
+            "input-send-event",
+            Some(serde_json::json!({
+                "events": [{ "type": "key", "data": { "key": code, "down": down } }]
+            })),
+        )?;
+        Ok(())
+    }
+
+    /// Key press = down + short hold + up.
+    pub fn press_key(&mut self, code: &str) -> Result<(), VmError> {
+        self.send_key(code, true)?;
+        std::thread::sleep(std::time::Duration::from_millis(120));
+        self.send_key(code, false)
+    }
+
     /// End the QEMU process via QMP.
     pub fn quit(&mut self) -> Result<(), VmError> {
         // `quit` closes the connection without a return object; tolerate EOF.
@@ -253,5 +275,48 @@ mod tests {
         let err = QmpClient::connect(&sock, Duration::from_secs(5)).unwrap_err();
         assert!(matches!(err, VmError::QmpHandshake(_)));
         h.join().unwrap();
+    }
+
+    #[test]
+    fn send_key_shape() {
+        use std::io::{BufRead, BufReader, Write};
+        use std::sync::mpsc;
+        let dir = std::env::temp_dir().join(format!("exr-qmp-key-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let sock = dir.join("q.sock");
+        let listener = UnixListener::bind(&sock).unwrap();
+        let (tx, rx) = mpsc::channel();
+        let h = std::thread::spawn(move || {
+            let (mut s, _) = listener.accept().unwrap();
+            let mut r = BufReader::new(s.try_clone().unwrap());
+            let mut line = String::new();
+            s.write_all(b"{\"QMP\": {\"version\": {}, \"capabilities\": []}}\n")
+                .unwrap();
+            line.clear();
+            r.read_line(&mut line).unwrap(); // capabilities
+            s.write_all(b"{\"return\": {}}\n").unwrap();
+            let mut got = Vec::new();
+            for _ in 0..2 {
+                line.clear();
+                r.read_line(&mut line).unwrap(); // down, then up
+                got.push(line.trim().to_string());
+                s.write_all(b"{\"return\": {}}\n").unwrap();
+            }
+            tx.send(got).unwrap();
+        });
+        let mut c = QmpClient::connect(&sock, Duration::from_secs(5)).unwrap();
+        c.press_key("ret").unwrap();
+        drop(c);
+        let got = rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        h.join().unwrap();
+        assert_eq!(got.len(), 2);
+        let down: serde_json::Value = serde_json::from_str(&got[0]).unwrap();
+        let up: serde_json::Value = serde_json::from_str(&got[1]).unwrap();
+        assert_eq!(down["execute"], "input-send-event");
+        assert_eq!(down["arguments"]["events"][0]["type"], "key");
+        assert_eq!(down["arguments"]["events"][0]["data"]["key"], "ret");
+        assert_eq!(down["arguments"]["events"][0]["data"]["down"], true);
+        assert_eq!(up["arguments"]["events"][0]["data"]["down"], false);
     }
 }

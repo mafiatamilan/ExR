@@ -1,0 +1,33 @@
+# ExR image manifest (M1b housekeeping)
+#
+# Text only. No image bytes in git. Images live OUTSIDE the repo at
+# ~/.local/share/exr/images (see docs/design/guest-images.md).
+# upstream_sha1 = publisher's value, verified at download time.
+# local_sha256 = computed locally after download (integrity anchor).
+
+schema_version = 1
+
+[[image]]
+name = "android-x86_64-9.0-r2.iso"
+role = "M1 guest: Android-x86 9.0-r2, 64-bit"
+publisher = "android-x86.org (Release Note 9.0-r2, 2020-03-25)"
+mirror_used = "downloads.sourceforge.net (OSDN unresolvable from build host)"
+size_bytes = 965738496
+upstream_sha1 = "1cc85b5ed7c830ff71aecf8405c7281a9c995aa0"
+local_sha256 = "f7eb8fc56f29ad5432335dc054183acf086c539f3990f0b6e9ff58bd6df4604e"
+status = "downloaded + sha1-verified"
+
+# Extracted once from the ISO above (7z, read-only) for direct kernel boot.
+# Same provenance; hashes recorded for drift detection, not security.
+
+[[derived]]
+name = "kernel"
+from = "android-x86_64-9.0-r2.iso"
+size_bytes = 7511040
+local_sha1 = "5aff232dd8034571aed2a71113873c7b707cd1cd"
+
+[[derived]]
+name = "initrd.img"
+from = "android-x86_64-9.0-r2.iso"
+size_bytes = 1358743
+local_sha1 = "941aa60fb7ea80a66d5dcf87d544c834e9554bc9"

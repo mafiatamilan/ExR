@@ -102,6 +102,43 @@ pub fn is_nonblank(ppm: &Ppm) -> bool {
     nonblack_fraction(ppm) >= 0.001
 }
 
+/// Number of distinct RGB colors in the frame.
+pub fn distinct_colors(ppm: &Ppm) -> usize {
+    use std::collections::HashSet;
+    ppm.pixels
+        .chunks_exact(3)
+        .map(|px| [px[0], px[1], px[2]])
+        .collect::<HashSet<_>>()
+        .len()
+}
+
+/// Graphical vs text-console heuristic (M1b secondary signal).
+///
+/// Calibrated 2026-10-16 on real captures: VGA text console = 2 colors
+/// (black + one text color); isolinux menu graphic = 565 colors (photo
+/// background); black = 1. Thresholds: text is 2..=16 colors with content;
+/// graphical is >= 100 distinct colors. Anything between is `Unknown`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FrameKind {
+    Black,
+    Text,
+    Graphical,
+    Unknown,
+}
+
+/// Classify a frame. Never used alone for acceptance (see M1b report).
+pub fn classify(ppm: &Ppm) -> FrameKind {
+    if !is_nonblank(ppm) {
+        return FrameKind::Black;
+    }
+    match distinct_colors(ppm) {
+        0 | 1 => FrameKind::Black,
+        2..=16 => FrameKind::Text,
+        17..=99 => FrameKind::Unknown,
+        _ => FrameKind::Graphical,
+    }
+}
+
 /// Fraction of pixels differing between two same-size frames (0.0–1.0).
 /// Returns `None` when dimensions differ.
 pub fn changed_fraction(a: &Ppm, b: &Ppm) -> Option<f64> {
@@ -198,5 +235,42 @@ mod tests {
         std::fs::write(&p, b"P3\n2 2\n255\n0 0 0 0 0 0 0 0 0 0 0 0\n").unwrap();
         assert!(parse_ppm(&p).is_err());
         let _ = std::fs::remove_file(&p);
+    }
+
+    /// Helper: 8x8 frame with exactly `n` distinct colors (n <= 64).
+    fn solid(n: usize) -> Ppm {
+        let mut pixels = vec![0u8; 64 * 3];
+        for i in 0..64 {
+            let c = (i * n / 64) % n.max(1);
+            pixels[i * 3] = c as u8;
+            pixels[i * 3 + 1] = (c * 7 % 251) as u8;
+            pixels[i * 3 + 2] = (255 - c) as u8;
+        }
+        Ppm {
+            pixels,
+            width: 8,
+            height: 8,
+        }
+    }
+
+    #[test]
+    fn classify_black_text_graphical() {
+        assert_eq!(classify(&ppm_of(8, 8, [0, 0, 0])), FrameKind::Black);
+        // 2-color text console (black + white)
+        let mut text = ppm_of(8, 8, [0, 0, 0]);
+        for i in 0..8 {
+            text.pixels[i * 3..i * 3 + 3].copy_from_slice(&[255, 255, 255]);
+        }
+        assert_eq!(classify(&text), FrameKind::Text);
+        // photo-like frame: hundreds of colors (capped by 64px helper size,
+        // so build the count via distinct solid blocks instead)
+        let mut photo = ppm_of(32, 32, [0, 0, 0]);
+        for (i, px) in photo.pixels.chunks_exact_mut(3).enumerate() {
+            let v = (i % 251) as u8;
+            px.copy_from_slice(&[v, (v / 2).max(1), 255 - v]);
+        }
+        assert!(distinct_colors(&photo) >= 100);
+        assert_eq!(classify(&photo), FrameKind::Graphical);
+        assert_eq!(classify(&solid(40)), FrameKind::Unknown);
     }
 }

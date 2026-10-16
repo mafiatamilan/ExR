@@ -146,3 +146,19 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
 - 19 unit tests green; fmt/clippy clean. Deviations: Boot::DirectKernel added,
   polling proof (display sleeps when idle), serial_log API, persistent qcow2
   deferred (live-boot per scope).
+
+## 2026-10-16 — M1b DONE (Android userspace proven; approaches used: 2 of 3 budgeted)
+
+- Diagnosis path: initramfs `init` script read (open Android-x86 code) → emergency
+  shell means `exec switch_root` fell through; DEBUG=2 run parked at its checkpoint
+  (mounts confirmed working); pty-driven interrogation proved switch_root SUCCEEDED
+  (PID1=/init, 1000+ procs, FUSE mounts, boot_completed=1).
+- Markers + timings in docs/design/vmm-options.md (M1b section). Variations:
+  consoleblank=0 (Android still sleeps display), RAM4096 (no change), virtio-vga
+  (no guest driver → dark; M3), vesa entry skipped with rationale.
+- Product: Boot::IsoMenu + QMP send_key/press_key (verified via --iso-boot PASS),
+  frame classify() heuristic (calibrated 1/2/565 colours), serial last-60 in demo.
+- 21 unit tests green; fmt/clippy clean. Image manifest at docs/design/image-manifest.toml.
+- cargo-deny 0.20.2 (rootless `cargo install --locked`): `cargo deny check` →
+  advisories ok, bans ok, licenses ok, sources ok. Notes: syn 2.0.119 + 3.0.9 both
+  present (informational); BSD-3-Clause allowance currently unmatched (kept for M2+).

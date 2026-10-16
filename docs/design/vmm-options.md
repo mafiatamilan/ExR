@@ -93,3 +93,53 @@ stuck on the orange menu, verified by screendump); kernel cmdline is the ISO's o
 framebuffer never lights); QMP `input-send-event` on this QEMU carries
 key/btn/rel/abs/**mtt** cases (probed via `query-qmp-schema`) — multitouch
 transport confirmed present for M4.
+
+## M1b findings (2026-10-16): Android userspace proven
+
+ISO boot entries used verbatim (`isolinux.cfg`): live =
+`initrd=/initrd.img root=/dev/ram0 quiet SRC= DATA=`; debug adds `DEBUG=2`;
+software-rendering (`vesa`) = `nomodeset vga=ask` — `vga=ask` is interactive and
+`nomodeset` removes the framebuffer the proof needs, so the vesa entry was NOT
+attempted physically (recorded rationale, not an oversight).
+
+Serial analysis (349-line boot log; last-60 are kernel driver chatter with no
+errors — ata/sdhci/usbhid/e1000e/input, then):
+`Run /init as init process` → `Detecting Android-x86... found at /dev/sr0` →
+a root shell prompt. The initramfs `init` script ends in an emergency shell loop
+*only if* `exec switch_root` fails — but interactive probing (pty serial, shell
+is pre-existing, not injected) proved the opposite: `/proc/1/cmdline` is `/init`,
+`/proc` holds 1000+ PIDs, mounts show the full Android world (cgroups, FUSE
+emulated storage), and `getprop sys.boot_completed` returns `1`. So switch_root
+SUCCEEDED; the coexisting root console shell comes from the live image itself
+(Android-side console service, exact unit unconfirmed — does not affect acceptance).
+
+PRIMARY markers (exact strings from the kernel log, first at t≈1.63 s):
+`init: init first stage started!`, `init: Using Android DT directory
+/proc/device-tree/firmware/android/`, `init: First stage mount skipped
+(missing/incompatible fstab in device tree)`, `init: Skipped setting
+INIT_AVB_VERSION (not in recovery mode)`, `init: Loading SELinux policy`,
+`init: init second stage started!`, `init: Running restorecon...`,
+`init: waitid failed: No child processes`. `sys.boot_completed=1` by t≈25 s.
+
+Variations, one change at a time: `consoleblank=0` — display STILL sleeps between
+t+100 s (lit, 565 colors) and t+150 s (black): the sleeper is Android, not the
+kernel blanker → polling proof is required design, not a workaround. RAM 4096 —
+no behavioral difference vs 2048 (default stays 2048). `-vga virtio` — guest runs
+but the kernel log shows zero virtio-gpu driver activity and the framebuffer stays
+dark: virtio-gpu needs guest-driver work, stays M3. qcow2 install — deferred
+(live-boot per scope); `Boot::IsoMenu` (QMP Enter on the menu) implemented and
+verified as the kept alternative to `Boot::DirectKernel`.
+
+SECONDARY frame signal: `classify()` colour-count heuristic — black 1 colour,
+VGA text 2 colours, isolinux photo-menu 565 colours; thresholds text 2–16,
+graphical ≥100 (calibrated on real captures, unit-tested). Informational in M1b;
+acceptance rests on the serial markers. FINAL proof (`adb getprop
+sys.boot_completed`) is M2.
+
+ADB headless enablement (docs only, no code): image is userdebug
+(`ro.debuggable=1`, `persist.sys.usb.config=adb` preset, `/bin/adbd` present,
+`ro.secure=1`, no `ro.adb.secure` override); no ADB kernel params in ISO entries.
+Route: root serial shell → `setprop service.adb.tcp.port 5555` (+ adbd restart if
+needed) → QEMU user-net `hostfwd=tcp:127.0.0.1:5555-:5555` → host adb. No Settings
+toggle and no input path needed for bring-up. Open for M2: RSA-auth behaviour
+(`ro.adb.secure` default on userdebug → host-key provisioning or test disabling).
