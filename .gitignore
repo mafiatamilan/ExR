@@ -20,6 +20,9 @@ dist/
 *.so
 *.dll
 
+# REA unpacked artifacts (large, derived) - never commit
+work/
+
 # OS / editor
 .DS_Store
 Thumbs.db
