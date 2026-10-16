@@ -123,3 +123,47 @@ Originals: `mumu-mnq-win.igd055.msi` / `.zip` in repo root (read-only inputs).
   (38 XML layouts incl. 15 `lan_*` languages), `ColaBoxChecker.exe` 4198576 B,
   `HyperVChecker.exe` 120488 B (PE32+ x64), `crashpad_handler.exe` 556024 B,
   `sentry.dll` 228856 B, `7z.exe` 299776 B / `7z.dll` 1148160 B (21.05), VC/UCRT set.
+
+## E9. Inno payload via pinned third-party fork build (Q1-a)
+
+- NOTE: this is the third-party fork `github.com/crazy-max/innoextract`, NOT upstream
+  `constexpr.org/innoextract` 1.9 (which rejects this loader). Pinned tag `v1.11.0`,
+  commit `e4d1cc35f1ab782e84f83af667ea80527bcadded` (matches the `e4d1cc3` prefix),
+  verified via `git ls-remote` + `git rev-parse HEAD` on a tag-pinned shallow clone at
+  `/tmp/opencode/reatools/innoextract-src` (outside repo).
+- Source-build preferred but impossible without root (boost headers absent); used the
+  fork's release binary `innoextract-linux-amd64` (10,181,976 B) instead:
+  SHA-256 `9c6a3b08ea7b0fc9ea3c3a8e321db40ac2ed7696487208a35804bc1bb70863f4`.
+  It needs `libboost_{iostreams,filesystem,program_options,atomic,system}.so.1.83.0`
+  (system has 1.92.0), satisfied rootless from Arch-archive `boost-libs-1.83.0-5`
+  (2.3 MiB pkg, only the 5 needed `.so` files extracted to
+  `/tmp/opencode/reatools/boost183/usr/lib`, `LD_LIBRARY_PATH`-scoped). Reports
+  `innoextract 1.11.0 / Extracts installers created by Inno Setup 1.2.10 to 7.1.0`.
+- All runs as unprivileged user with network disabled (`unshare -rn`; bwrap also present
+  but unneeded). Nothing extracted was executed.
+- Step 1 list-only (`--list --list-sizes`, exit 0): app name `NPAPI_24.0.0.1.2`, setup data
+  version 6.7.0 unicode, 1 language (english), `--info` says `Setup is not passworded`
+  (NOT encrypted), no GOG ID. 34 records, 17 marked overwritten; summed record sizes
+  1084.3 MiB (< 2 GiB gate, extraction authorized). Compression method not stated by list
+  output (97 MiB overlay vs ~1 GiB records).
+- Step 2 extract (`--extract --output-dir work/mumu-setup`, exit 0, 26 warnings, all of
+  type `Could not read back ... to calculate output checksum for multi-part file` —
+  joined-file checksums unverified, recorded as limitation). 26 files on disk, `du` 2.1 GiB
+  (over the list total because 9 big records install to 2 destinations each; disk has
+  ~285 GiB free so no pressure). `work/mumu-setup/` is gitignored.
+- Extracted triage (static `file`/`head`/`7z l`/`objdump -p`, no execution):
+  four biggest files (TaskLoad/code$GenerateRandomStrings 255 MiB, dll1 281 MiB,
+  stardict-editor 282 MiB, libcef 168 MiB, each x2 destinations) are non-PE `data` sharing
+  magic `4f7f9000` (same packer family, 7z-opaque); `Updater` 43 MiB magic `36b19d26`;
+  slots `44/66/77` (4.6/13/2.2 MiB) magics `4d508efe/d0c10ae7/2d3eec2b`; `instal.ini`
+  random bytes; `_8` 506 KiB `XX+YY+...` hex-blob text with CRLF; `ins.ini` is a real PE32
+  DLL i386 (ImageBase 0x10000000, stamp 2020-11-04, imports KERNEL32/ADVAPI32);
+  `55.zip` holds 4 `msvcp140_*.dll` (May 2025); `VC_redist.x64.exe` is a real PE32 GUI;
+  small DLLs (Fourier/ImageRestore/wavelet 2007, WS_Log 2016) are real PE32s.
+  Driver/service/emulator-name search (`*.sys/*.cat/*.inf`, `vbox/qemu/android/adb/keymap`
+  in names): EMPTY. No disk-image names or signatures anywhere (binwalk clean, §E3).
+- Fallback NOT needed: 1.11.0 succeeded, so `innoextract-go` was not tried; no hand-parsing
+  and no VM/Wine run performed, per instructions.
+- Ghidra decision (triage-first): no new run — no extracted binary maps to a named A3
+  question (VMM/display/input absent offline); `ins.ini` would answer bundler-loader
+  questions only (out of scope, left static).

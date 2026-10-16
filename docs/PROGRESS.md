@@ -59,3 +59,19 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
   `docs/evidence/mumu.md` (ledger E1–E8). Old `mumu-msi-A1.md` moved to `mumu-A1.md`.
 - .gitignore verified: `*.exe/*.msi/*.zip/*.apk/*.ipa/*.dmg/*.pkg/*.iso/*.vhd*/*.ova/*.img`,
   `build/out/dist`, `work/` — only text reports staged.
+
+## 2026-10-16 — MuMu A1 payload unlock (Q1-a, fork build, network-isolated)
+
+- Pinned third-party fork `github.com/crazy-max/innoextract` tag `v1.11.0` commit
+  `e4d1cc35…` (verified); source build impossible rootless (no boost headers), so used
+  release binary (SHA-256 `9c6a3b08…`, logged) + 5 boost-1.83 `.so` from Arch archive.
+- `unshare -rn` list-only: NPAPI_24.0.0.1.2, Inno 6.7.0 unicode, NOT encrypted, 34 records,
+  1084 MiB (< 2 GiB gate). Extract to `work/mumu-setup/`: 26 files, 2.1 GiB on disk
+  (duplicated destinations), 26 multi-part checksum warnings, exit 0. Nothing executed.
+- KEY FINDING: offline payload is a third-party bundle (StarDict/CEF/task-loader/updater,
+  obfuscated blobs, disguised `.ini` PE) — zero emulator binaries, zero drivers, zero
+  disk images. Emulator arrives only via downloader manifest; A3 core stays UNKNOWN.
+- No new Ghidra (no binary maps to a named A3 question), no guest image to mount,
+  no fallback needed (1.11.0 worked; innoextract-go untouched).
+- Docs rewritten to template: `docs/spec/mumu-A1.md` (no IDs/addresses/snippets),
+  `docs/evidence/mumu.md` E9. STOPPING before MEmu per instructions.
