@@ -1,0 +1,27 @@
+# Emulator installers / large binaries - never push these
+*.exe
+*.msi
+*.zip
+*.apk
+*.ipa
+*.dmg
+*.pkg
+*.iso
+*.vhd
+*.vhdx
+*.ova
+*.img
+
+# Build outputs
+build/
+out/
+dist/
+*.o
+*.so
+*.dll
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
