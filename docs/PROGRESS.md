@@ -113,3 +113,18 @@ Originals in repo root are read-only inputs; all unpacking goes to `work/`.
 - `docs/spec/comparison.md`: feature table with per-cell confidence, baseline vs
   differentiators, unlearned-items section, gap recommendations.
 - No Phase B, no cloning. Awaiting your review of the comparison.
+
+## 2026-10-16 — Phase B0 DONE (research + design, no code)
+
+- Researched open projects only (network): QEMU (GPLv2, KVM/hvf/whpx/QMP), crosvm
+  (BSD-3-Clause, WHPX, virtio-gpu), rust-vmm crates (Apache/BSD), scrcpy v5.0.1
+  (Apache-2.0), gfxstream (Apache-2.0), virgl (mesa docs; licence unverified),
+  Android-x86 9.0-r2, Waydroid (LXC/Lineage-13), Bliss (images paused), egui (MIT),
+  adb_client 3.2.3 (MIT). Every claim cited URL + date + verified/unverified.
+- Deliverables: `docs/design/` (vmm-options, guest-images, gpu-and-display, input
+  with original TOML keymap v1, cli-and-config, licensing-register) + `docs/DESIGN.md`
+  (workspace, 9 crates, VmBackend/FrameSource/InputSink traits, tokio/thiserror/tracing,
+  headless-guest tests, risks, out-of-scope, baseline→crate map, reordered milestones
+  M1-headless/M2-adb/M3-display with reasons).
+- Clean-room: design cites `docs/spec/` only; verified no vendor strings/configs in
+  design docs. No implementation code. Text only. STOPPING for review before any code.
